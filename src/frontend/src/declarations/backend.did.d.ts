@@ -78,6 +78,7 @@ export interface PublicUserProfile {
   'upiId' : [] | [string],
   'phone' : string,
   'pincode' : string,
+  'acceptsCashOnDelivery' : boolean,
 }
 export type Role = { 'consumer' : null } |
   { 'farmer' : null };
@@ -90,6 +91,7 @@ export interface UserProfile {
   'upiId' : [] | [string],
   'phone' : string,
   'pincode' : string,
+  'acceptsCashOnDelivery' : boolean,
 }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |

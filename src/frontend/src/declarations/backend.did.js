@@ -84,6 +84,7 @@ export const UserProfile = IDL.Record({
   'upiId' : IDL.Opt(IDL.Text),
   'phone' : IDL.Text,
   'pincode' : IDL.Text,
+  'acceptsCashOnDelivery' : IDL.Bool,
 });
 export const FounderStats = IDL.Record({
   'totalOrders' : IDL.Nat,
@@ -107,6 +108,7 @@ export const PublicUserProfile = IDL.Record({
   'upiId' : IDL.Opt(IDL.Text),
   'phone' : IDL.Text,
   'pincode' : IDL.Text,
+  'acceptsCashOnDelivery' : IDL.Bool,
 });
 
 export const idlService = IDL.Service({
@@ -271,6 +273,7 @@ export const idlFactory = ({ IDL }) => {
     'upiId' : IDL.Opt(IDL.Text),
     'phone' : IDL.Text,
     'pincode' : IDL.Text,
+    'acceptsCashOnDelivery' : IDL.Bool,
   });
   const FounderStats = IDL.Record({
     'totalOrders' : IDL.Nat,
@@ -294,6 +297,7 @@ export const idlFactory = ({ IDL }) => {
     'upiId' : IDL.Opt(IDL.Text),
     'phone' : IDL.Text,
     'pincode' : IDL.Text,
+    'acceptsCashOnDelivery' : IDL.Bool,
   });
   
   return IDL.Service({

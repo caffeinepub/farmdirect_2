@@ -33,6 +33,7 @@ actor {
     role : Role;
     upiId : ?Text; // Optional field for UPI ID
     upiQrImageId : ?Text; // Optional field for UPI QR image reference
+    acceptsCashOnDelivery : Bool; // New field
   };
 
   type ProductListing = {
@@ -102,6 +103,7 @@ actor {
     role : Role;
     upiId : ?Text;
     upiQrImageId : ?Text;
+    acceptsCashOnDelivery : Bool; // New field
   };
 
   // Type for founder stats
@@ -171,6 +173,7 @@ actor {
           role = profile.role;
           upiId = profile.upiId;
           upiQrImageId = profile.upiQrImageId;
+          acceptsCashOnDelivery = profile.acceptsCashOnDelivery;
         };
       };
       case (null) { null };
@@ -295,7 +298,7 @@ actor {
     };
 
     let totalAmount = listing.price * quantity;
-    let platformFee = (totalAmount * PLATFORM_FEE_PERCENT) / 100;
+    let platformFee = (totalAmount * PLATFORM_FEE_PERCENT : Nat) / 100;
     let sellerAmount = totalAmount - platformFee;
 
     let order : Order = {

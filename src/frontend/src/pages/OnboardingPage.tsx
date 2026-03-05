@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
+  Banknote,
   CreditCard,
   Hash,
   Loader2,
@@ -35,6 +37,7 @@ export default function OnboardingPage({
   const [city, setCity] = useState("");
   const [pincode, setPincode] = useState("");
   const [upiId, setUpiId] = useState("");
+  const [acceptsCashOnDelivery, setAcceptsCashOnDelivery] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const saveProfile = useSaveCallerUserProfile();
@@ -62,6 +65,8 @@ export default function OnboardingPage({
         pincode: pincode.trim(),
         role: role === "farmer" ? Role.farmer : Role.consumer,
         upiId: upiId.trim() || undefined,
+        acceptsCashOnDelivery:
+          role === "farmer" ? acceptsCashOnDelivery : false,
       });
       toast.success("Profile created! Welcome to FarmDirect 🌱");
       navigate({
@@ -192,27 +197,50 @@ export default function OnboardingPage({
             )}
           </div>
 
-          {/* UPI ID — farmers only */}
+          {/* UPI ID + COD — farmers only */}
           {role === "farmer" && (
-            <div>
-              <Label
-                htmlFor="upiId"
-                className="text-sm font-medium mb-1.5 block"
-              >
-                <CreditCard className="w-4 h-4 inline mr-1.5" />
-                {t("upi_id_for_receiving")}
-              </Label>
-              <Input
-                id="upiId"
-                data-ocid="onboarding.upi_input"
-                placeholder="e.g. farmer@upi or 9999999999@gpay"
-                value={upiId}
-                onChange={(e) => setUpiId(e.target.value)}
-              />
-              <p className="text-muted-foreground text-xs mt-1">
-                Optional — consumers will pay directly to this UPI ID
-              </p>
-            </div>
+            <>
+              <div>
+                <Label
+                  htmlFor="upiId"
+                  className="text-sm font-medium mb-1.5 block"
+                >
+                  <CreditCard className="w-4 h-4 inline mr-1.5" />
+                  {t("upi_id_for_receiving")}
+                </Label>
+                <Input
+                  id="upiId"
+                  data-ocid="onboarding.upi_input"
+                  placeholder="e.g. farmer@upi or 9999999999@gpay"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
+                />
+                <p className="text-muted-foreground text-xs mt-1">
+                  Optional — consumers will pay directly to this UPI ID
+                </p>
+              </div>
+
+              {/* Cash on Delivery toggle */}
+              <div className="flex items-center justify-between bg-card border border-border rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                  <Banknote className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground leading-none">
+                      Accept Cash on Delivery
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Buyers can pay cash when they receive the product
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="acceptsCod"
+                  data-ocid="onboarding.cod_switch"
+                  checked={acceptsCashOnDelivery}
+                  onCheckedChange={setAcceptsCashOnDelivery}
+                />
+              </div>
+            </>
           )}
 
           <div>

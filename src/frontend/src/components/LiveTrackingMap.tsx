@@ -1,5 +1,3 @@
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { MapPin, Navigation, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DeliveryType, OrderStatus } from "../backend.d";
@@ -8,15 +6,14 @@ import {
   useUpdateOrderLocation,
 } from "../hooks/useQueries";
 
-// Fix Leaflet default icon issue
-(L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl =
-  undefined;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+// Leaflet is loaded via CDN in index.html and accessed through window
+// This avoids the npm package requirement while preserving full functionality
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    L: any;
+  }
+}
 
 interface LiveTrackingMapProps {
   orderId: bigint;
@@ -51,7 +48,9 @@ function secondsAgo(timestampNs: bigint | undefined): number | null {
   return Math.floor((nowMs - thenMs) / 1000);
 }
 
-function createEmojiIcon(emoji: string, color: string): L.DivIcon {
+function createEmojiIcon(emoji: string, color: string): any {
+  const L = window.L;
+  if (!L) return null;
   return L.divIcon({
     html: `<div style="
       width: 38px;
@@ -79,10 +78,10 @@ export default function LiveTrackingMap({
   isSeller,
 }: LiveTrackingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const leafletMapRef = useRef<L.Map | null>(null);
-  const sellerMarkerRef = useRef<L.Marker | null>(null);
-  const buyerMarkerRef = useRef<L.Marker | null>(null);
-  const pathLineRef = useRef<L.Polyline | null>(null);
+  const leafletMapRef = useRef<any>(null);
+  const sellerMarkerRef = useRef<any>(null);
+  const buyerMarkerRef = useRef<any>(null);
+  const pathLineRef = useRef<any>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastSentRef = useRef<number>(0);
 
@@ -90,6 +89,7 @@ export default function LiveTrackingMap({
   const [shareError, setShareError] = useState<string | null>(null);
   const [myLat, setMyLat] = useState<number | null>(null);
   const [myLng, setMyLng] = useState<number | null>(null);
+  const [leafletReady, setLeafletReady] = useState(false);
 
   const { data: locations } = useGetOrderLocations(orderId);
   const updateLocation = useUpdateOrderLocation();
@@ -113,9 +113,35 @@ export default function LiveTrackingMap({
       ? haversineDistanceKm(sellerLat, sellerLng, buyerLat, buyerLng)
       : null;
 
-  // Initialize map
+  // Dynamically load Leaflet CSS + JS from CDN if not already loaded
   useEffect(() => {
-    if (!mapRef.current || leafletMapRef.current) return;
+    if (window.L) {
+      setLeafletReady(true);
+      return;
+    }
+
+    // Load CSS
+    if (!document.querySelector('link[href*="leaflet"]')) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+    }
+
+    // Load JS
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    script.onload = () => setLeafletReady(true);
+    script.onerror = () => console.warn("Failed to load Leaflet from CDN");
+    document.head.appendChild(script);
+  }, []);
+
+  // Initialize map once Leaflet is ready
+  useEffect(() => {
+    if (!leafletReady || !mapRef.current || leafletMapRef.current) return;
+
+    const L = window.L;
+    if (!L) return;
 
     const map = L.map(mapRef.current, {
       zoom: 12,
@@ -136,18 +162,19 @@ export default function LiveTrackingMap({
       map.remove();
       leafletMapRef.current = null;
     };
-  }, []);
+  }, [leafletReady]);
 
   // Update markers and path when locations change
   useEffect(() => {
     const map = leafletMapRef.current;
-    if (!map) return;
+    const L = window.L;
+    if (!map || !L) return;
 
     const sellerIcon = createEmojiIcon("🌾", "#2d7a3a");
     const buyerIcon = createEmojiIcon("🛒", "#1a56db");
 
     if (sellerLat !== null && sellerLng !== null) {
-      const pos: L.LatLngTuple = [sellerLat, sellerLng];
+      const pos: [number, number] = [sellerLat, sellerLng];
       if (sellerMarkerRef.current) {
         sellerMarkerRef.current.setLatLng(pos);
       } else {
@@ -158,7 +185,7 @@ export default function LiveTrackingMap({
     }
 
     if (buyerLat !== null && buyerLng !== null) {
-      const pos: L.LatLngTuple = [buyerLat, buyerLng];
+      const pos: [number, number] = [buyerLat, buyerLng];
       if (buyerMarkerRef.current) {
         buyerMarkerRef.current.setLatLng(pos);
       } else {
@@ -175,7 +202,7 @@ export default function LiveTrackingMap({
       buyerLat !== null &&
       buyerLng !== null
     ) {
-      const latlngs: L.LatLngTuple[] = [
+      const latlngs: [number, number][] = [
         [sellerLat, sellerLng],
         [buyerLat, buyerLng],
       ];
@@ -278,12 +305,25 @@ export default function LiveTrackingMap({
       </div>
 
       {/* Map container */}
-      <div
-        ref={mapRef}
-        style={{ height: 260 }}
-        className="w-full relative z-0"
-        data-ocid="tracking.map_marker"
-      />
+      {leafletReady ? (
+        <div
+          ref={mapRef}
+          style={{ height: 260 }}
+          className="w-full relative z-0"
+          data-ocid="tracking.map_marker"
+        />
+      ) : (
+        <div
+          style={{ height: 260 }}
+          className="w-full flex items-center justify-center bg-muted"
+          data-ocid="tracking.map_marker"
+        >
+          <div className="text-center">
+            <MapPin className="w-8 h-8 text-muted-foreground mx-auto mb-2 animate-pulse" />
+            <p className="text-sm text-muted-foreground">Loading map...</p>
+          </div>
+        </div>
+      )}
 
       {/* Stats row */}
       {(sellerLat !== null || buyerLat !== null) && (

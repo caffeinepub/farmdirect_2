@@ -1,5 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  Banknote,
+  CheckCircle2,
+  Loader2,
+  ShieldCheck,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -129,6 +135,7 @@ export default function PaymentPage({
   const { t } = useLanguage();
   const [paymentState, setPaymentState] = useState<PaymentState>("idle");
   const [upiRef, setUpiRef] = useState<string>("");
+  const [isCodPayment, setIsCodPayment] = useState(false);
   const confirmPayment = useConfirmPayment();
 
   // Fetch seller's public profile
@@ -157,6 +164,7 @@ export default function PaymentPage({
 
     try {
       await confirmPayment.mutateAsync({ orderId, upiRef: ref });
+      setIsCodPayment(false);
       setPaymentState("success");
       toast.success(
         `Payment successful via ${method === "gpay" ? "Google Pay" : "Paytm"}! 🎉`,
@@ -164,6 +172,22 @@ export default function PaymentPage({
     } catch (_err) {
       setPaymentState("idle");
       toast.error("Payment confirmation failed. Please try again.");
+    }
+  };
+
+  const handleCodPay = async () => {
+    setPaymentState("processing");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const ref = `COD${Date.now()}`;
+    setUpiRef(ref);
+    try {
+      await confirmPayment.mutateAsync({ orderId, upiRef: ref });
+      setIsCodPayment(true);
+      setPaymentState("success");
+      toast.success("Order confirmed! Pay cash on delivery.");
+    } catch (_err) {
+      setPaymentState("idle");
+      toast.error("Order confirmation failed. Please try again.");
     }
   };
 
@@ -238,10 +262,12 @@ export default function PaymentPage({
               </motion.div>
 
               <h2 className="font-display text-3xl font-bold text-foreground mb-2">
-                {t("payment_successful")}
+                {isCodPayment ? "Order Confirmed!" : t("payment_successful")}
               </h2>
               <p className="text-muted-foreground mb-6">
-                {t("your_order_confirmed")}
+                {isCodPayment
+                  ? "Pay cash when your order arrives."
+                  : t("your_order_confirmed")}
               </p>
 
               <div className="bg-card rounded-2xl border border-border p-5 text-left mb-8 max-w-sm mx-auto">
@@ -298,10 +324,17 @@ export default function PaymentPage({
                   )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">
-                      {t("upi_ref")}
+                      {isCodPayment ? "Payment Method" : t("upi_ref")}
                     </span>
                     <span className="font-mono text-xs text-foreground">
-                      {upiRef}
+                      {isCodPayment ? (
+                        <span className="inline-flex items-center gap-1 text-green-700 font-semibold not-italic">
+                          <Banknote className="w-3 h-3" />
+                          Cash on Delivery
+                        </span>
+                      ) : (
+                        upiRef
+                      )}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -537,6 +570,47 @@ export default function PaymentPage({
                   </span>
                 </motion.button>
               </div>
+
+              {/* Cash on Delivery option */}
+              {sellerProfile?.acceptsCashOnDelivery && (
+                <>
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-sm text-muted-foreground px-2">
+                      or pay on delivery
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    data-ocid="payment.cod_button"
+                    onClick={handleCodPay}
+                    className="w-full flex items-center justify-center gap-3 bg-green-50 border-2 border-green-400 rounded-2xl p-4 h-16 shadow-sm hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400"
+                  >
+                    <Banknote className="w-5 h-5 text-green-700" />
+                    <div className="text-left">
+                      <p
+                        style={{
+                          color: "#15803d",
+                          fontWeight: 700,
+                          fontSize: "15px",
+                        }}
+                      >
+                        Pay on Delivery (Cash)
+                      </p>
+                      <p
+                        style={{
+                          color: "#16a34a",
+                          fontSize: "11px",
+                        }}
+                      >
+                        Pay ₹{totalNum} when you receive the product
+                      </p>
+                    </div>
+                  </motion.button>
+                </>
+              )}
 
               {/* Security note */}
               <div className="flex items-center justify-center gap-2 mt-6 text-xs text-muted-foreground">

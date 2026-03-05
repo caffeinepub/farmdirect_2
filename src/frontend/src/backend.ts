@@ -97,6 +97,7 @@ export interface UserProfile {
     upiId?: string;
     phone: string;
     pincode: string;
+    acceptsCashOnDelivery: boolean;
 }
 export type Time = bigint;
 export interface _CaffeineStorageRefillInformation {
@@ -147,6 +148,7 @@ export interface PublicUserProfile {
     upiId?: string;
     phone: string;
     pincode: string;
+    acceptsCashOnDelivery: boolean;
 }
 export interface FounderStats {
     totalOrders: bigint;
@@ -923,6 +925,7 @@ function from_candid_record_n30(_uploadFile: (file: ExternalBlob) => Promise<Uin
     upiId: [] | [string];
     phone: string;
     pincode: string;
+    acceptsCashOnDelivery: boolean;
 }): {
     upiQrImageId?: string;
     city: string;
@@ -931,6 +934,7 @@ function from_candid_record_n30(_uploadFile: (file: ExternalBlob) => Promise<Uin
     upiId?: string;
     phone: string;
     pincode: string;
+    acceptsCashOnDelivery: boolean;
 } {
     return {
         upiQrImageId: record_opt_to_undefined(from_candid_opt_n15(_uploadFile, _downloadFile, value.upiQrImageId)),
@@ -939,7 +943,8 @@ function from_candid_record_n30(_uploadFile: (file: ExternalBlob) => Promise<Uin
         role: from_candid_Role_n31(_uploadFile, _downloadFile, value.role),
         upiId: record_opt_to_undefined(from_candid_opt_n15(_uploadFile, _downloadFile, value.upiId)),
         phone: value.phone,
-        pincode: value.pincode
+        pincode: value.pincode,
+        acceptsCashOnDelivery: value.acceptsCashOnDelivery
     };
 }
 function from_candid_record_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -1105,6 +1110,7 @@ function to_candid_record_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     upiId?: string;
     phone: string;
     pincode: string;
+    acceptsCashOnDelivery: boolean;
 }): {
     upiQrImageId: [] | [string];
     city: string;
@@ -1113,6 +1119,7 @@ function to_candid_record_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     upiId: [] | [string];
     phone: string;
     pincode: string;
+    acceptsCashOnDelivery: boolean;
 } {
     return {
         upiQrImageId: value.upiQrImageId ? candid_some(value.upiQrImageId) : candid_none(),
@@ -1121,7 +1128,8 @@ function to_candid_record_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         role: to_candid_Role_n48(_uploadFile, _downloadFile, value.role),
         upiId: value.upiId ? candid_some(value.upiId) : candid_none(),
         phone: value.phone,
-        pincode: value.pincode
+        pincode: value.pincode,
+        acceptsCashOnDelivery: value.acceptsCashOnDelivery
     };
 }
 function to_candid_variant_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: OrderStatus): {

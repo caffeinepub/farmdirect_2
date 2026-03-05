@@ -15,6 +15,7 @@ export interface UserProfile {
     upiId?: string;
     phone: string;
     pincode: string;
+    acceptsCashOnDelivery: boolean;
 }
 export type Time = bigint;
 export interface Order {
@@ -58,6 +59,7 @@ export interface PublicUserProfile {
     upiId?: string;
     phone: string;
     pincode: string;
+    acceptsCashOnDelivery: boolean;
 }
 export interface FounderStats {
     totalOrders: bigint;

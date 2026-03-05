@@ -15,7 +15,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  Banknote,
   ClipboardList,
+  CreditCard,
   Eye,
   EyeOff,
   LayoutDashboard,
@@ -42,6 +44,7 @@ import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useDeactivateListing,
   useDeleteListing,
+  useGetCallerUserProfile,
   useGetFarmerListings,
   useGetSellerOrders,
   useGetUserProfile,
@@ -73,8 +76,12 @@ export default function FarmerDashboard({
 
   const { data: listings, isLoading: listingsLoading } = useGetFarmerListings();
   const { data: orders, isLoading: ordersLoading } = useGetSellerOrders();
+  const { data: callerProfile } = useGetCallerUserProfile();
   const deactivate = useDeactivateListing();
   const deleteListing = useDeleteListing();
+
+  const farmerUpiId = callerProfile?.upiId ?? undefined;
+  const farmerAcceptsCod = callerProfile?.acceptsCashOnDelivery ?? false;
 
   const handleLogout = async () => {
     await clear();
@@ -261,6 +268,8 @@ export default function FarmerDashboard({
                     isDeactivating={deactivate.isPending}
                     isDeleting={deleteListing.isPending}
                     navigate={navigate}
+                    farmerUpiId={farmerUpiId}
+                    farmerAcceptsCod={farmerAcceptsCod}
                   />
                 ))}
               </div>
@@ -345,6 +354,8 @@ interface FarmerListingCardProps {
   isDeactivating: boolean;
   isDeleting: boolean;
   navigate: (v: AppView) => void;
+  farmerUpiId?: string;
+  farmerAcceptsCod?: boolean;
 }
 
 function FarmerListingCard({
@@ -355,6 +366,8 @@ function FarmerListingCard({
   onDelete,
   isDeactivating,
   isDeleting,
+  farmerUpiId,
+  farmerAcceptsCod,
 }: FarmerListingCardProps) {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
 
@@ -405,6 +418,23 @@ function FarmerListingCard({
             <p className="text-muted-foreground text-xs">
               Qty: {Number(listing.quantity)} {listing.unit} · {listing.city}
             </p>
+            {/* Payment info pills */}
+            {(farmerUpiId || farmerAcceptsCod) && (
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {farmerUpiId && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-primary/8 text-primary border border-primary/20 rounded-full px-2 py-0.5">
+                    <CreditCard className="w-2.5 h-2.5" />
+                    UPI: {farmerUpiId}
+                  </span>
+                )}
+                {farmerAcceptsCod && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5">
+                    <Banknote className="w-2.5 h-2.5" />
+                    Cash on Delivery ✓
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <Badge
             className={`flex-shrink-0 text-xs ${listing.active ? "bg-green-100 text-green-700 border-green-200" : "bg-gray-100 text-gray-500 border-gray-200"}`}

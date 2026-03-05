@@ -1,11 +1,22 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useQueryClient } from "@tanstack/react-query";
-import { Hash, Loader2, LogOut, MapPin, Phone, User } from "lucide-react";
+import {
+  Banknote,
+  CreditCard,
+  Hash,
+  Loader2,
+  LogOut,
+  MapPin,
+  Phone,
+  User,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { UserProfile } from "../backend.d";
+import { Role } from "../backend.d";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useSaveCallerUserProfile } from "../hooks/useQueries";
 
@@ -22,6 +33,13 @@ export default function ProfileEditor({ profile }: ProfileEditorProps) {
   const [phone, setPhone] = useState(profile.phone);
   const [city, setCity] = useState(profile.city);
   const [pincode, setPincode] = useState(profile.pincode);
+  const [upiId, setUpiId] = useState(profile.upiId ?? "");
+  const [acceptsCashOnDelivery, setAcceptsCashOnDelivery] = useState(
+    profile.acceptsCashOnDelivery ?? false,
+  );
+
+  const isFarmer =
+    profile.role === Role.farmer || (profile.role as string) === "farmer";
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +50,8 @@ export default function ProfileEditor({ profile }: ProfileEditorProps) {
         phone: phone.trim(),
         city: city.trim(),
         pincode: pincode.trim(),
+        upiId: isFarmer ? upiId.trim() || undefined : profile.upiId,
+        acceptsCashOnDelivery: isFarmer ? acceptsCashOnDelivery : false,
       });
       toast.success("Profile updated!");
     } catch {
@@ -120,6 +140,52 @@ export default function ProfileEditor({ profile }: ProfileEditorProps) {
               inputMode="numeric"
             />
           </div>
+
+          {/* Farmer-only payment fields */}
+          {isFarmer && (
+            <>
+              <div>
+                <Label
+                  htmlFor="pupi"
+                  className="text-sm font-medium mb-1.5 block"
+                >
+                  <CreditCard className="w-3.5 h-3.5 inline mr-1" />
+                  UPI ID for Payments
+                </Label>
+                <Input
+                  id="pupi"
+                  data-ocid="profile.upi_input"
+                  placeholder="e.g. farmer@upi"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
+                />
+                <p className="text-muted-foreground text-xs mt-1">
+                  Consumers will pay directly to this UPI ID
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between bg-muted/40 border border-border rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                  <Banknote className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground leading-none">
+                      Accept Cash on Delivery
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Allow buyers to pay cash on receipt
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="pcod"
+                  data-ocid="profile.cod_switch"
+                  checked={acceptsCashOnDelivery}
+                  onCheckedChange={setAcceptsCashOnDelivery}
+                />
+              </div>
+            </>
+          )}
+
           <Button
             type="submit"
             data-ocid="profile.save_button"

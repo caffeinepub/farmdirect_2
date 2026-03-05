@@ -1,17 +1,33 @@
 import Map "mo:core/Map";
-import Principal "mo:core/Principal";
 import Nat "mo:core/Nat";
+import Principal "mo:core/Principal";
+import Text "mo:core/Text";
 import Time "mo:core/Time";
 import AccessControl "authorization/access-control";
 
 module {
-  // Types from old version
-  type UserRole = {
+  type OldRole = {
     #farmer;
     #consumer;
   };
 
-  type OrderStatus = {
+  type OldUserProfile = {
+    name : Text;
+    phone : Text;
+    pincode : Text;
+    city : Text;
+    role : OldRole;
+    upiId : ?Text;
+    upiQrImageId : ?Text;
+  };
+
+  type OldFeeState = {
+    totalFeesCollected : Nat;
+    pendingWithdrawal : Nat;
+    withdrawnAmount : Nat;
+  };
+
+  type OldOrderStatus = {
     #pending_payment;
     #payment_confirmed;
     #in_delivery;
@@ -20,19 +36,30 @@ module {
     #cancelled;
   };
 
-  type DeliveryType = {
+  type OldDeliveryType = {
     #delivery;
     #pickup;
   };
 
-  type OldUserProfile = {
-    name : Text;
-    phone : Text;
-    pincode : Text;
-    city : Text;
-    role : UserRole;
-    upiId : ?Text;
-    upiQrImageId : ?Text;
+  type OldOrder = {
+    id : Nat;
+    listingId : Nat;
+    buyer : Principal;
+    seller : Principal;
+    quantity : Nat;
+    totalAmount : Nat;
+    status : OldOrderStatus;
+    deliveryType : OldDeliveryType;
+    upiRef : ?Text;
+    timestamp : Time.Time;
+    platformFee : Nat;
+    sellerAmount : Nat;
+    sellerLat : ?Float;
+    sellerLng : ?Float;
+    buyerLat : ?Float;
+    buyerLng : ?Float;
+    sellerLocationUpdatedAt : ?Time.Time;
+    buyerLocationUpdatedAt : ?Time.Time;
   };
 
   type OldProductListing = {
@@ -49,46 +76,71 @@ module {
     active : Bool;
   };
 
-  type OldOrder = {
+  type OldActor = {
+    accessControlState : AccessControl.AccessControlState;
+    productListings : Map.Map<Nat, OldProductListing>;
+    nextListingId : Nat;
+    nextOrderId : Nat;
+    orders : Map.Map<Nat, OldOrder>;
+    feeState : OldFeeState;
+    userProfiles : Map.Map<Principal, OldUserProfile>;
+  };
+
+  type NewRole = {
+    #farmer;
+    #consumer;
+  };
+
+  type NewUserProfile = {
+    name : Text;
+    phone : Text;
+    pincode : Text;
+    city : Text;
+    role : NewRole;
+    upiId : ?Text;
+    upiQrImageId : ?Text;
+    acceptsCashOnDelivery : Bool;
+  };
+
+  type NewFeeState = {
+    totalFeesCollected : Nat;
+    pendingWithdrawal : Nat;
+    withdrawnAmount : Nat;
+  };
+
+  type NewOrderStatus = {
+    #pending_payment;
+    #payment_confirmed;
+    #in_delivery;
+    #ready_for_pickup;
+    #completed;
+    #cancelled;
+  };
+
+  type NewDeliveryType = {
+    #delivery;
+    #pickup;
+  };
+
+  type NewOrder = {
     id : Nat;
     listingId : Nat;
     buyer : Principal;
     seller : Principal;
     quantity : Nat;
     totalAmount : Nat;
-    status : OrderStatus;
-    deliveryType : DeliveryType;
+    status : NewOrderStatus;
+    deliveryType : NewDeliveryType;
     upiRef : ?Text;
     timestamp : Time.Time;
     platformFee : Nat;
     sellerAmount : Nat;
-  };
-
-  type OldFeeState = {
-    totalFeesCollected : Nat;
-    pendingWithdrawal : Nat;
-    withdrawnAmount : Nat;
-  };
-
-  type OldActor = {
-    accessControlState : AccessControl.AccessControlState;
-    userProfiles : Map.Map<Principal, OldUserProfile>;
-    productListings : Map.Map<Nat, OldProductListing>;
-    nextListingId : Nat;
-    nextOrderId : Nat;
-    orders : Map.Map<Nat, OldOrder>;
-    feeState : OldFeeState;
-  };
-
-  // Types from new version
-  type NewUserProfile = {
-    name : Text;
-    phone : Text;
-    pincode : Text;
-    city : Text;
-    role : UserRole;
-    upiId : ?Text;
-    upiQrImageId : ?Text;
+    sellerLat : ?Float;
+    sellerLng : ?Float;
+    buyerLat : ?Float;
+    buyerLng : ?Float;
+    sellerLocationUpdatedAt : ?Time.Time;
+    buyerLocationUpdatedAt : ?Time.Time;
   };
 
   type NewProductListing = {
@@ -105,58 +157,23 @@ module {
     active : Bool;
   };
 
-  type NewOrder = {
-    id : Nat;
-    listingId : Nat;
-    buyer : Principal;
-    seller : Principal;
-    quantity : Nat;
-    totalAmount : Nat;
-    status : OrderStatus;
-    deliveryType : DeliveryType;
-    upiRef : ?Text;
-    timestamp : Time.Time;
-    platformFee : Nat;
-    sellerAmount : Nat;
-    sellerLat : ?Float;
-    sellerLng : ?Float;
-    buyerLat : ?Float;
-    buyerLng : ?Float;
-    sellerLocationUpdatedAt : ?Time.Time;
-    buyerLocationUpdatedAt : ?Time.Time;
-  };
-
-  type NewFeeState = {
-    totalFeesCollected : Nat;
-    pendingWithdrawal : Nat;
-    withdrawnAmount : Nat;
-  };
-
   type NewActor = {
     accessControlState : AccessControl.AccessControlState;
-    userProfiles : Map.Map<Principal, NewUserProfile>;
     productListings : Map.Map<Nat, NewProductListing>;
     nextListingId : Nat;
     nextOrderId : Nat;
     orders : Map.Map<Nat, NewOrder>;
     feeState : NewFeeState;
+    userProfiles : Map.Map<Principal, NewUserProfile>;
   };
 
-  // Migration function
+  // Transform old actor state to new one
   public func run(old : OldActor) : NewActor {
-    let newOrders = old.orders.map<Nat, OldOrder, NewOrder>(
-      func(_id, oldOrder) {
-        {
-          oldOrder with
-          sellerLat = null;
-          sellerLng = null;
-          buyerLat = null;
-          buyerLng = null;
-          sellerLocationUpdatedAt = null;
-          buyerLocationUpdatedAt = null;
-        };
+    let newUserProfiles = old.userProfiles.map<Principal, OldUserProfile, NewUserProfile>(
+      func(_principal, oldProfile) {
+        { oldProfile with acceptsCashOnDelivery = false };
       }
     );
-    { old with orders = newOrders };
+    { old with userProfiles = newUserProfiles };
   };
 };
