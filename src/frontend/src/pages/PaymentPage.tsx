@@ -4,25 +4,21 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { AppView } from "../App";
-import { useConfirmPayment } from "../hooks/useQueries";
+import { useLanguage } from "../contexts/LanguageContext";
+import {
+  useConfirmPayment,
+  useGetUserPublicProfile,
+} from "../hooks/useQueries";
 
 interface PaymentPageProps {
   orderId: bigint;
   amount: bigint;
   listingTitle: string;
+  sellerPrincipal: string;
   navigate: (v: AppView) => void;
 }
 
 const SERVICE_FEE_PERCENT = 2;
-const OWNER_UPI_ID = "9751917451@gpay";
-
-// amount = subtotal + 2% fee; compute breakdown from total
-function computeBreakdown(total: number) {
-  // total = subtotal * 1.02  =>  subtotal = total / 1.02
-  const subtotal = Math.round(total / (1 + SERVICE_FEE_PERCENT / 100));
-  const fee = total - subtotal;
-  return { subtotal, fee };
-}
 
 type PaymentState = "idle" | "processing" | "success";
 
@@ -127,11 +123,24 @@ export default function PaymentPage({
   orderId,
   amount,
   listingTitle,
+  sellerPrincipal,
   navigate,
 }: PaymentPageProps) {
+  const { t } = useLanguage();
   const [paymentState, setPaymentState] = useState<PaymentState>("idle");
   const [upiRef, setUpiRef] = useState<string>("");
   const confirmPayment = useConfirmPayment();
+
+  // Fetch seller's public profile
+  const { data: sellerProfile } = useGetUserPublicProfile(sellerPrincipal);
+
+  // Compute fee breakdown from amount
+  // amount = sellerAmount + platformFee (2% of original subtotal)
+  // If amount = subtotal * 1.02 → subtotal = amount / 1.02
+  const totalNum = Number(amount);
+  const subtotal = Math.round(totalNum / (1 + SERVICE_FEE_PERCENT / 100));
+  const platformFee = totalNum - subtotal;
+  const sellerReceives = subtotal; // seller gets subtotal (before our cut)
 
   const generateUpiRef = () => {
     return `UPI${Math.floor(100000000000 + Math.random() * 900000000000).toString()}`;
@@ -158,6 +167,10 @@ export default function PaymentPage({
     }
   };
 
+  // Determine display UPI: seller's UPI or fallback
+  const displaySellerName = sellerProfile?.name ?? "Seller";
+  const displayUpiId = sellerProfile?.upiId ?? "—";
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -171,7 +184,7 @@ export default function PaymentPage({
               className="gap-1.5 -ml-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back
+              {t("back")}
             </Button>
           </div>
         </div>
@@ -192,11 +205,9 @@ export default function PaymentPage({
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
               </div>
               <h2 className="font-display text-2xl font-bold text-foreground mb-2">
-                Processing Payment
+                {t("processing_payment")}
               </h2>
-              <p className="text-muted-foreground">
-                Please wait while we confirm your payment...
-              </p>
+              <p className="text-muted-foreground">{t("please_wait")}</p>
               <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <ShieldCheck className="w-4 h-4 text-primary" />
                 Secured by UPI encryption
@@ -227,59 +238,76 @@ export default function PaymentPage({
               </motion.div>
 
               <h2 className="font-display text-3xl font-bold text-foreground mb-2">
-                Payment Successful!
+                {t("payment_successful")}
               </h2>
               <p className="text-muted-foreground mb-6">
-                Your order has been confirmed
+                {t("your_order_confirmed")}
               </p>
 
               <div className="bg-card rounded-2xl border border-border p-5 text-left mb-8 max-w-sm mx-auto">
                 <div className="flex justify-between items-center mb-3 pb-3 border-b border-border">
                   <span className="text-muted-foreground text-sm">
-                    Amount Paid
+                    {t("amount_paid")}
                   </span>
                   <span className="font-display font-bold text-xl text-foreground">
-                    ₹{Number(amount)}
+                    ₹{totalNum}
                   </span>
                 </div>
                 <div className="space-y-2 text-sm">
-                  {(() => {
-                    const { subtotal, fee } = computeBreakdown(Number(amount));
-                    return (
-                      <>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Product Amount
-                          </span>
-                          <span className="font-medium text-foreground">
-                            ₹{subtotal}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Service Fee ({SERVICE_FEE_PERCENT}%)
-                          </span>
-                          <span className="font-medium text-primary">
-                            ₹{fee}
-                          </span>
-                        </div>
-                      </>
-                    );
-                  })()}
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Order ID</span>
+                    <span className="text-muted-foreground">
+                      {t("seller_receives")}
+                    </span>
+                    <span className="font-medium text-foreground">
+                      ₹{sellerReceives}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      {t("platform_fee")} ({SERVICE_FEE_PERCENT}%)
+                    </span>
+                    <span className="font-medium text-primary">
+                      ₹{platformFee}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      {t("order_id")}
+                    </span>
                     <span className="font-medium text-foreground">
                       #{orderId.toString()}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">UPI Ref</span>
+                    <span className="text-muted-foreground">
+                      {t("paid_to")}
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {displaySellerName}
+                    </span>
+                  </div>
+                  {displayUpiId !== "—" && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        {t("upi_id")}
+                      </span>
+                      <span className="font-mono text-xs text-primary">
+                        {displayUpiId}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      {t("upi_ref")}
+                    </span>
                     <span className="font-mono text-xs text-foreground">
                       {upiRef}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Product</span>
+                    <span className="text-muted-foreground">
+                      {t("product")}
+                    </span>
                     <span className="font-medium text-foreground text-right max-w-[160px] truncate">
                       {listingTitle}
                     </span>
@@ -292,14 +320,14 @@ export default function PaymentPage({
                 onClick={() => navigate({ page: "order-tracking", orderId })}
                 className="w-full h-12 text-base font-semibold max-w-sm"
               >
-                Track Order →
+                {t("track_order")} →
               </Button>
               <Button
                 variant="ghost"
                 className="w-full mt-2 max-w-sm"
                 onClick={() => navigate({ page: "consumer-home" })}
               >
-                Back to Home
+                {t("back_to_home")}
               </Button>
             </motion.div>
           )}
@@ -312,47 +340,81 @@ export default function PaymentPage({
             >
               {/* Amount */}
               <div className="text-center mb-8">
-                <p className="text-muted-foreground text-sm mb-1">
-                  Pay to{" "}
-                  <span className="font-medium text-foreground">
-                    {OWNER_UPI_ID}
-                  </span>
-                </p>
+                {/* Recipient info card */}
+                <div className="inline-flex flex-col items-center bg-card border border-border rounded-xl px-5 py-3 mb-5 gap-0.5 w-full max-w-xs">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                    {t("paying_to")}
+                  </p>
+                  <p className="font-display text-lg font-bold text-foreground leading-tight">
+                    {displaySellerName}
+                  </p>
+                  {displayUpiId !== "—" ? (
+                    <p className="text-sm font-mono text-primary font-medium break-all">
+                      {displayUpiId}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">
+                      UPI not set by seller
+                    </p>
+                  )}
+                  {sellerProfile?.phone && (
+                    <p className="text-xs text-muted-foreground">
+                      📞 {sellerProfile.phone}
+                    </p>
+                  )}
+                </div>
+
                 <h1 className="font-display text-5xl font-bold text-foreground">
-                  ₹{Number(amount)}
+                  ₹{totalNum}
                 </h1>
                 <p className="text-muted-foreground text-sm mt-2 truncate px-4">
                   {listingTitle}
                 </p>
-                {(() => {
-                  const { subtotal, fee } = computeBreakdown(Number(amount));
-                  return (
-                    <div className="flex items-center justify-center gap-3 mt-3 text-xs text-muted-foreground">
-                      <span>Product ₹{subtotal}</span>
-                      <span className="text-border">·</span>
-                      <span className="text-primary font-medium">
-                        {SERVICE_FEE_PERCENT}% Service Fee ₹{fee}
-                      </span>
-                    </div>
-                  );
-                })()}
+
+                {/* Fee breakdown */}
+                <div className="mt-4 bg-muted/50 rounded-xl p-3 max-w-xs mx-auto text-sm">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-muted-foreground">
+                      {t("you_pay")}
+                    </span>
+                    <span className="font-bold text-foreground">
+                      ₹{totalNum}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-muted-foreground">
+                      {t("seller_receives")}
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      ₹{sellerReceives}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1.5 border-t border-border/60">
+                    <span className="text-muted-foreground">
+                      {t("platform_fee")} ({SERVICE_FEE_PERCENT}%)
+                    </span>
+                    <span className="font-medium text-primary">
+                      ₹{platformFee}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* QR Code */}
               <div className="flex flex-col items-center bg-card rounded-2xl border border-border p-6 mb-6">
                 <p className="text-sm font-medium text-foreground mb-4">
-                  Scan & Pay
+                  {t("scan_and_pay")}
                 </p>
                 <MockQR />
                 <p className="text-xs text-muted-foreground mt-3">
-                  Scan this QR code with any UPI app
+                  {t("scan_qr_upi")}
                 </p>
               </div>
 
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex-1 h-px bg-border" />
                 <span className="text-sm text-muted-foreground px-2">
-                  or pay with
+                  {t("or_pay_with")}
                 </span>
                 <div className="flex-1 h-px bg-border" />
               </div>
@@ -479,7 +541,8 @@ export default function PaymentPage({
               {/* Security note */}
               <div className="flex items-center justify-center gap-2 mt-6 text-xs text-muted-foreground">
                 <ShieldCheck className="w-4 h-4 text-primary" />
-                100% secure UPI payment · Order #{orderId.toString()}
+                {t("secure_upi_payment")} · {t("order_id")} #
+                {orderId.toString()}
               </div>
             </motion.div>
           )}

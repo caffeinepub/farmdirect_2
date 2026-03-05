@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   Loader2,
   MapPin,
@@ -10,6 +9,8 @@ import {
 import { motion } from "motion/react";
 import { useState } from "react";
 import type { AppView } from "../App";
+import LanguageToggle from "../components/LanguageToggle";
+import { useLanguage } from "../contexts/LanguageContext";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
 interface LandingPageProps {
@@ -20,6 +21,7 @@ interface LandingPageProps {
 
 export default function LandingPage({ navigate }: LandingPageProps) {
   const { login, loginStatus, identity } = useInternetIdentity();
+  const { t } = useLanguage();
   const [pendingRole, setPendingRole] = useState<"farmer" | "consumer" | null>(
     null,
   );
@@ -45,7 +47,7 @@ export default function LandingPage({ navigate }: LandingPageProps) {
     {
       id: "no-middlemen",
       icon: <Sprout className="w-5 h-5" />,
-      text: "Direct from farm, no middlemen",
+      text: `${t("no_middlemen")} — Direct from farm`,
     },
     {
       id: "nearest",
@@ -66,6 +68,45 @@ export default function LandingPage({ navigate }: LandingPageProps) {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* Sticky top nav */}
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/40">
+        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
+              <ShoppingBag className="w-3.5 h-3.5 text-primary-foreground" />
+            </div>
+            <span className="font-display font-bold text-foreground text-sm">
+              {t("farmdirect")}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Language toggle — prominently placed before login */}
+            <LanguageToggle />
+
+            {/* Founder badge */}
+            <div
+              className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/8 border border-primary/15"
+              data-ocid="landing.founder.card"
+            >
+              <div className="w-7 h-7 rounded-full overflow-hidden ring-2 ring-primary/30 flex-shrink-0">
+                <img
+                  src="/assets/uploads/IMG_20260207_004605-1.jpg"
+                  alt="Ranjith S – Founder"
+                  className="w-full h-full object-cover object-center"
+                />
+              </div>
+              <div className="hidden sm:block leading-none">
+                <p className="text-[11px] font-bold text-foreground tracking-wide">
+                  RANJITH S
+                </p>
+                <p className="text-[10px] text-primary font-medium">Founder</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
       {/* Hero */}
       <section className="relative min-h-[70vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden">
         {/* Background image */}
@@ -95,7 +136,7 @@ export default function LandingPage({ navigate }: LandingPageProps) {
           >
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm text-white rounded-full px-4 py-1.5 text-sm font-medium mb-6 border border-white/20">
               <Sprout className="w-4 h-4 text-farm-green-light" />
-              Farm Fresh, Directly to You
+              {t("farm_fresh_directly_to_you")}
             </div>
 
             <h1 className="font-display text-5xl sm:text-7xl font-bold text-white mb-4 leading-none tracking-tight">
@@ -104,7 +145,7 @@ export default function LandingPage({ navigate }: LandingPageProps) {
 
             <p className="text-white/85 text-lg sm:text-xl max-w-xl mx-auto mb-10 font-body leading-relaxed">
               Connect with local farmers. Buy fresh produce directly from the
-              source — no markets, no middlemen.
+              source — {t("no_middlemen").toLowerCase()}.
             </p>
           </motion.div>
 
@@ -124,7 +165,7 @@ export default function LandingPage({ navigate }: LandingPageProps) {
             >
               <div className="text-3xl mb-3">🌾</div>
               <div className="font-display font-bold text-lg mb-1">
-                I'm a Farmer
+                {t("im_a_farmer")}
               </div>
               <div className="text-primary-foreground/80 text-sm">
                 Sell your fresh produce directly to nearby consumers
@@ -144,7 +185,7 @@ export default function LandingPage({ navigate }: LandingPageProps) {
             >
               <div className="text-3xl mb-3">🛒</div>
               <div className="font-display font-bold text-lg mb-1">
-                I'm a Consumer
+                {t("im_a_consumer")}
               </div>
               <div className="text-white/80 text-sm">
                 Discover and buy fresh farm produce near you
@@ -334,6 +375,76 @@ export default function LandingPage({ navigate }: LandingPageProps) {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Meet the Founder */}
+      <section className="py-20 px-4 bg-secondary/30">
+        <div className="max-w-3xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col items-center text-center"
+            data-ocid="founder.section"
+          >
+            {/* Section label */}
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-8 border border-primary/20">
+              <Sprout className="w-4 h-4" />
+              Our Founder
+            </div>
+
+            {/* Founder card */}
+            <div className="relative flex flex-col items-center">
+              {/* Decorative ring */}
+              <div className="absolute w-[168px] h-[168px] rounded-full border-2 border-dashed border-primary/30 animate-[spin_24s_linear_infinite]" />
+
+              {/* Photo */}
+              <motion.div
+                initial={{ scale: 0.85, opacity: 0 }}
+                whileInView={{ scale: 1, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="relative w-36 h-36 rounded-full overflow-hidden ring-4 ring-primary/20 shadow-card-hover z-10"
+              >
+                <img
+                  src="/assets/uploads/IMG_20260207_004605-1.jpg"
+                  alt="Ranjith S – Founder of FarmDirect"
+                  className="w-full h-full object-cover object-center"
+                />
+              </motion.div>
+            </div>
+
+            {/* Name & title */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="mt-6"
+            >
+              <h3 className="font-display text-2xl font-bold text-foreground tracking-tight">
+                RANJITH S
+              </h3>
+              <p className="text-primary font-semibold text-sm mt-1 uppercase tracking-widest">
+                Founder, FarmDirect
+              </p>
+            </motion.div>
+
+            {/* Quote */}
+            <motion.blockquote
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="mt-6 max-w-lg text-muted-foreground text-base leading-relaxed italic border-l-2 border-primary/40 pl-4 text-left"
+            >
+              "Every farmer deserves a direct path to the consumer. No
+              middlemen, no unfair prices — just fresh produce and fair
+              earnings."
+            </motion.blockquote>
+          </motion.div>
         </div>
       </section>
 

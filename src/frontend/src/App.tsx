@@ -1,10 +1,12 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
 import { useState } from "react";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
-import { useGetCallerUserProfile } from "./hooks/useQueries";
+import { useGetCallerUserProfile, useIsCallerAdmin } from "./hooks/useQueries";
 import ConsumerHome from "./pages/ConsumerHome";
 import FarmerDashboard from "./pages/FarmerDashboard";
+import FounderDashboard from "./pages/FounderDashboard";
 import LandingPage from "./pages/LandingPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import OrderTrackingPage from "./pages/OrderTrackingPage";
@@ -17,10 +19,17 @@ export type AppView =
   | { page: "farmer-dashboard"; tab?: string }
   | { page: "consumer-home" }
   | { page: "product-detail"; listingId: bigint }
-  | { page: "payment"; orderId: bigint; amount: bigint; listingTitle: string }
-  | { page: "order-tracking"; orderId: bigint };
+  | {
+      page: "payment";
+      orderId: bigint;
+      amount: bigint;
+      listingTitle: string;
+      sellerPrincipal: string;
+    }
+  | { page: "order-tracking"; orderId: bigint }
+  | { page: "founder-dashboard" };
 
-export default function App() {
+function AppInner() {
   const { identity, isInitializing } = useInternetIdentity();
   const isAuthenticated = !!identity;
   const {
@@ -28,6 +37,7 @@ export default function App() {
     isLoading: profileLoading,
     isFetched,
   } = useGetCallerUserProfile();
+  const { data: isAdmin } = useIsCallerAdmin();
 
   const [view, setView] = useState<AppView>({ page: "landing" });
   const [pendingRole, setPendingRole] = useState<"farmer" | "consumer" | null>(
@@ -57,7 +67,6 @@ export default function App() {
         <LandingPage
           onSelectRole={(role) => {
             setPendingRole(role);
-            // Login will redirect to onboarding/dashboard
           }}
           onAuthenticated={(role) => {
             setPendingRole(role);
@@ -99,6 +108,16 @@ export default function App() {
     );
   }
 
+  // Founder dashboard – admin only
+  if (view.page === "founder-dashboard") {
+    return (
+      <>
+        <FounderDashboard navigate={navigate} />
+        <Toaster richColors />
+      </>
+    );
+  }
+
   const currentView =
     view.page === "landing"
       ? userProfile.role === "farmer"
@@ -114,6 +133,7 @@ export default function App() {
           initialTab={
             (currentView as { page: "farmer-dashboard"; tab?: string }).tab
           }
+          isAdmin={!!isAdmin}
           navigate={navigate}
         />
       )}
@@ -138,6 +158,7 @@ export default function App() {
                 orderId: bigint;
                 amount: bigint;
                 listingTitle: string;
+                sellerPrincipal: string;
               }
             ).orderId
           }
@@ -148,6 +169,7 @@ export default function App() {
                 orderId: bigint;
                 amount: bigint;
                 listingTitle: string;
+                sellerPrincipal: string;
               }
             ).amount
           }
@@ -158,8 +180,20 @@ export default function App() {
                 orderId: bigint;
                 amount: bigint;
                 listingTitle: string;
+                sellerPrincipal: string;
               }
             ).listingTitle
+          }
+          sellerPrincipal={
+            (
+              currentView as {
+                page: "payment";
+                orderId: bigint;
+                amount: bigint;
+                listingTitle: string;
+                sellerPrincipal: string;
+              }
+            ).sellerPrincipal
           }
           navigate={navigate}
         />
@@ -174,5 +208,13 @@ export default function App() {
       )}
       <Toaster richColors />
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppInner />
+    </LanguageProvider>
   );
 }

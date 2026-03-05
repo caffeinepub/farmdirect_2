@@ -45,28 +45,66 @@ export const OrderStatus = IDL.Variant({
   'in_delivery' : IDL.Null,
   'ready_for_pickup' : IDL.Null,
 });
+export const Time = IDL.Int;
 export const DeliveryType = IDL.Variant({
   'pickup' : IDL.Null,
   'delivery' : IDL.Null,
 });
-export const Time = IDL.Int;
 export const Order = IDL.Record({
   'id' : IDL.Nat,
   'status' : OrderStatus,
+  'platformFee' : IDL.Nat,
   'listingId' : IDL.Nat,
+  'buyerLocationUpdatedAt' : IDL.Opt(Time),
   'deliveryType' : DeliveryType,
   'seller' : IDL.Principal,
+  'sellerLat' : IDL.Opt(IDL.Float64),
+  'sellerLng' : IDL.Opt(IDL.Float64),
   'upiRef' : IDL.Opt(IDL.Text),
   'totalAmount' : IDL.Nat,
+  'sellerAmount' : IDL.Nat,
   'timestamp' : Time,
   'quantity' : IDL.Nat,
+  'sellerLocationUpdatedAt' : IDL.Opt(Time),
+  'buyerLat' : IDL.Opt(IDL.Float64),
+  'buyerLng' : IDL.Opt(IDL.Float64),
   'buyer' : IDL.Principal,
+});
+export const OrderWithFees = IDL.Record({
+  'order' : Order,
+  'platformFee' : IDL.Nat,
+  'sellerAmount' : IDL.Nat,
 });
 export const Role = IDL.Variant({ 'consumer' : IDL.Null, 'farmer' : IDL.Null });
 export const UserProfile = IDL.Record({
+  'upiQrImageId' : IDL.Opt(IDL.Text),
   'city' : IDL.Text,
   'name' : IDL.Text,
   'role' : Role,
+  'upiId' : IDL.Opt(IDL.Text),
+  'phone' : IDL.Text,
+  'pincode' : IDL.Text,
+});
+export const FounderStats = IDL.Record({
+  'totalOrders' : IDL.Nat,
+  'pendingWithdrawal' : IDL.Nat,
+  'totalFeesCollected' : IDL.Nat,
+  'withdrawnAmount' : IDL.Nat,
+});
+export const OrderLocations = IDL.Record({
+  'buyerLocationUpdatedAt' : IDL.Opt(Time),
+  'sellerLat' : IDL.Opt(IDL.Float64),
+  'sellerLng' : IDL.Opt(IDL.Float64),
+  'sellerLocationUpdatedAt' : IDL.Opt(Time),
+  'buyerLat' : IDL.Opt(IDL.Float64),
+  'buyerLng' : IDL.Opt(IDL.Float64),
+});
+export const PublicUserProfile = IDL.Record({
+  'upiQrImageId' : IDL.Opt(IDL.Text),
+  'city' : IDL.Text,
+  'name' : IDL.Text,
+  'role' : Role,
+  'upiId' : IDL.Opt(IDL.Text),
   'phone' : IDL.Text,
   'pincode' : IDL.Text,
 });
@@ -107,9 +145,11 @@ export const idlService = IDL.Service({
   'deleteListing' : IDL.Func([IDL.Nat], [], []),
   'getAllActiveListings' : IDL.Func([], [IDL.Vec(ProductListing)], ['query']),
   'getAllOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+  'getAllOrdersWithFees' : IDL.Func([], [IDL.Vec(OrderWithFees)], ['query']),
   'getBuyerOrders' : IDL.Func([IDL.Principal], [IDL.Vec(Order)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getFounderStats' : IDL.Func([], [FounderStats], ['query']),
   'getListing' : IDL.Func([IDL.Nat], [IDL.Opt(ProductListing)], ['query']),
   'getListingsByCity' : IDL.Func(
       [IDL.Text],
@@ -127,6 +167,11 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getOrder' : IDL.Func([IDL.Nat], [IDL.Opt(Order)], ['query']),
+  'getOrderLocations' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Opt(OrderLocations)],
+      ['query'],
+    ),
   'getOrdersByStatus' : IDL.Func([OrderStatus], [IDL.Vec(Order)], ['query']),
   'getSellerOrders' : IDL.Func([IDL.Principal], [IDL.Vec(Order)], ['query']),
   'getUserProfile' : IDL.Func(
@@ -134,9 +179,16 @@ export const idlService = IDL.Service({
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'getUserPublicProfile' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(PublicUserProfile)],
+      ['query'],
+    ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'placeOrder' : IDL.Func([IDL.Nat, IDL.Nat, DeliveryType], [IDL.Nat], []),
+  'recordWithdrawal' : IDL.Func([IDL.Nat], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'updateOrderLocation' : IDL.Func([IDL.Nat, IDL.Float64, IDL.Float64], [], []),
   'updateOrderStatus' : IDL.Func([IDL.Nat, OrderStatus], [], []),
 });
 
@@ -180,28 +232,66 @@ export const idlFactory = ({ IDL }) => {
     'in_delivery' : IDL.Null,
     'ready_for_pickup' : IDL.Null,
   });
+  const Time = IDL.Int;
   const DeliveryType = IDL.Variant({
     'pickup' : IDL.Null,
     'delivery' : IDL.Null,
   });
-  const Time = IDL.Int;
   const Order = IDL.Record({
     'id' : IDL.Nat,
     'status' : OrderStatus,
+    'platformFee' : IDL.Nat,
     'listingId' : IDL.Nat,
+    'buyerLocationUpdatedAt' : IDL.Opt(Time),
     'deliveryType' : DeliveryType,
     'seller' : IDL.Principal,
+    'sellerLat' : IDL.Opt(IDL.Float64),
+    'sellerLng' : IDL.Opt(IDL.Float64),
     'upiRef' : IDL.Opt(IDL.Text),
     'totalAmount' : IDL.Nat,
+    'sellerAmount' : IDL.Nat,
     'timestamp' : Time,
     'quantity' : IDL.Nat,
+    'sellerLocationUpdatedAt' : IDL.Opt(Time),
+    'buyerLat' : IDL.Opt(IDL.Float64),
+    'buyerLng' : IDL.Opt(IDL.Float64),
     'buyer' : IDL.Principal,
+  });
+  const OrderWithFees = IDL.Record({
+    'order' : Order,
+    'platformFee' : IDL.Nat,
+    'sellerAmount' : IDL.Nat,
   });
   const Role = IDL.Variant({ 'consumer' : IDL.Null, 'farmer' : IDL.Null });
   const UserProfile = IDL.Record({
+    'upiQrImageId' : IDL.Opt(IDL.Text),
     'city' : IDL.Text,
     'name' : IDL.Text,
     'role' : Role,
+    'upiId' : IDL.Opt(IDL.Text),
+    'phone' : IDL.Text,
+    'pincode' : IDL.Text,
+  });
+  const FounderStats = IDL.Record({
+    'totalOrders' : IDL.Nat,
+    'pendingWithdrawal' : IDL.Nat,
+    'totalFeesCollected' : IDL.Nat,
+    'withdrawnAmount' : IDL.Nat,
+  });
+  const OrderLocations = IDL.Record({
+    'buyerLocationUpdatedAt' : IDL.Opt(Time),
+    'sellerLat' : IDL.Opt(IDL.Float64),
+    'sellerLng' : IDL.Opt(IDL.Float64),
+    'sellerLocationUpdatedAt' : IDL.Opt(Time),
+    'buyerLat' : IDL.Opt(IDL.Float64),
+    'buyerLng' : IDL.Opt(IDL.Float64),
+  });
+  const PublicUserProfile = IDL.Record({
+    'upiQrImageId' : IDL.Opt(IDL.Text),
+    'city' : IDL.Text,
+    'name' : IDL.Text,
+    'role' : Role,
+    'upiId' : IDL.Opt(IDL.Text),
     'phone' : IDL.Text,
     'pincode' : IDL.Text,
   });
@@ -242,9 +332,11 @@ export const idlFactory = ({ IDL }) => {
     'deleteListing' : IDL.Func([IDL.Nat], [], []),
     'getAllActiveListings' : IDL.Func([], [IDL.Vec(ProductListing)], ['query']),
     'getAllOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+    'getAllOrdersWithFees' : IDL.Func([], [IDL.Vec(OrderWithFees)], ['query']),
     'getBuyerOrders' : IDL.Func([IDL.Principal], [IDL.Vec(Order)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getFounderStats' : IDL.Func([], [FounderStats], ['query']),
     'getListing' : IDL.Func([IDL.Nat], [IDL.Opt(ProductListing)], ['query']),
     'getListingsByCity' : IDL.Func(
         [IDL.Text],
@@ -262,6 +354,11 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getOrder' : IDL.Func([IDL.Nat], [IDL.Opt(Order)], ['query']),
+    'getOrderLocations' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Opt(OrderLocations)],
+        ['query'],
+      ),
     'getOrdersByStatus' : IDL.Func([OrderStatus], [IDL.Vec(Order)], ['query']),
     'getSellerOrders' : IDL.Func([IDL.Principal], [IDL.Vec(Order)], ['query']),
     'getUserProfile' : IDL.Func(
@@ -269,9 +366,20 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'getUserPublicProfile' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(PublicUserProfile)],
+        ['query'],
+      ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'placeOrder' : IDL.Func([IDL.Nat, IDL.Nat, DeliveryType], [IDL.Nat], []),
+    'recordWithdrawal' : IDL.Func([IDL.Nat], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'updateOrderLocation' : IDL.Func(
+        [IDL.Nat, IDL.Float64, IDL.Float64],
+        [],
+        [],
+      ),
     'updateOrderStatus' : IDL.Func([IDL.Nat, OrderStatus], [], []),
   });
 };

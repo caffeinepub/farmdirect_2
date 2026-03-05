@@ -73,6 +73,27 @@ export default function ConsumerHome({ profile, navigate }: ConsumerHomeProps) {
               FarmDirect
             </span>
           </div>
+
+          {/* Founder badge */}
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/8 border border-primary/15"
+            data-ocid="header.founder.card"
+          >
+            <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-primary/30 flex-shrink-0">
+              <img
+                src="/assets/uploads/IMG_20260207_004605-1.jpg"
+                alt="Ranjith S – Founder"
+                className="w-full h-full object-cover object-center"
+              />
+            </div>
+            <div className="hidden sm:block leading-none">
+              <p className="text-[11px] font-bold text-foreground tracking-wide">
+                RANJITH S
+              </p>
+              <p className="text-[10px] text-primary font-medium">Founder</p>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground hidden sm:inline">
               👋 {profile.name}

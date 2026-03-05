@@ -18,6 +18,7 @@ import {
   ClipboardList,
   Eye,
   EyeOff,
+  LayoutDashboard,
   Loader2,
   LogOut,
   Package,
@@ -33,8 +34,10 @@ import type { AppView } from "../App";
 import type { Order, ProductListing, UserProfile } from "../backend.d";
 import { DeliveryType, OrderStatus } from "../backend.d";
 import AddProductForm from "../components/AddProductForm";
+import LanguageToggle from "../components/LanguageToggle";
 import OrderStatusBadge from "../components/OrderStatusBadge";
 import ProfileEditor from "../components/ProfileEditor";
+import { useLanguage } from "../contexts/LanguageContext";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useDeactivateListing,
@@ -48,14 +51,17 @@ import {
 interface FarmerDashboardProps {
   profile: UserProfile;
   initialTab?: string;
+  isAdmin?: boolean;
   navigate: (v: AppView) => void;
 }
 
 export default function FarmerDashboard({
   profile,
   initialTab,
+  isAdmin = false,
   navigate,
 }: FarmerDashboardProps) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState(initialTab ?? "listings");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingListing, setEditingListing] = useState<ProductListing | null>(
@@ -109,7 +115,41 @@ export default function FarmerDashboard({
               <span className="ml-2 text-xs text-muted-foreground">Farmer</span>
             </div>
           </div>
+
+          {/* Founder badge */}
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/8 border border-primary/15"
+            data-ocid="header.founder.card"
+          >
+            <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-primary/30 flex-shrink-0">
+              <img
+                src="/assets/uploads/IMG_20260207_004605-1.jpg"
+                alt="Ranjith S – Founder"
+                className="w-full h-full object-cover object-center"
+              />
+            </div>
+            <div className="hidden sm:block leading-none">
+              <p className="text-[11px] font-bold text-foreground tracking-wide">
+                RANJITH S
+              </p>
+              <p className="text-[10px] text-primary font-medium">Founder</p>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2">
+            <LanguageToggle className="hidden sm:flex" />
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate({ page: "founder-dashboard" })}
+                className="gap-1.5 text-xs h-8"
+                data-ocid="farmer.founder_panel_button"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t("founder_panel")}</span>
+              </Button>
+            )}
             <span className="text-sm text-muted-foreground hidden sm:inline">
               👋 {profile.name}
             </span>
@@ -117,7 +157,7 @@ export default function FarmerDashboard({
               variant="ghost"
               size="icon"
               onClick={handleLogout}
-              title="Logout"
+              title={t("logout")}
             >
               <LogOut className="w-4 h-4" />
             </Button>
@@ -230,7 +270,7 @@ export default function FarmerDashboard({
           {/* Orders */}
           <TabsContent value="orders">
             <h2 className="font-display text-xl font-bold mb-4">
-              Incoming Orders
+              {t("incoming_orders")}
             </h2>
             {ordersLoading ? (
               <div className="grid gap-4">
@@ -483,7 +523,13 @@ function SellerOrderCard({ order, index, navigate }: SellerOrderCardProps) {
             <span className="text-muted-foreground">Qty:</span>{" "}
             <span className="font-medium">{Number(order.quantity)}</span>
           </p>
-          <p className="text-primary font-bold">₹{Number(order.totalAmount)}</p>
+          {/* Show seller net amount prominently */}
+          <p className="text-primary font-bold">
+            You receive: ₹{Number(order.sellerAmount)}
+          </p>
+          <p className="text-muted-foreground text-xs">
+            Platform fee: ₹{Number(order.platformFee)}
+          </p>
           <Badge variant="outline" className="text-xs mt-1">
             {order.deliveryType === DeliveryType.delivery
               ? "🚚 Delivery"

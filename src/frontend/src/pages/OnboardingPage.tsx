@@ -1,12 +1,22 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Hash, Loader2, MapPin, Phone, Sprout, User } from "lucide-react";
+import {
+  CreditCard,
+  Hash,
+  Loader2,
+  MapPin,
+  Phone,
+  Sprout,
+  User,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { AppView } from "../App";
 import { Role } from "../backend.d";
+import LanguageToggle from "../components/LanguageToggle";
+import { useLanguage } from "../contexts/LanguageContext";
 import { useSaveCallerUserProfile } from "../hooks/useQueries";
 
 interface OnboardingPageProps {
@@ -18,11 +28,13 @@ export default function OnboardingPage({
   preSelectedRole,
   navigate,
 }: OnboardingPageProps) {
+  const { t } = useLanguage();
   const [role, setRole] = useState<"farmer" | "consumer">(preSelectedRole);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [pincode, setPincode] = useState("");
+  const [upiId, setUpiId] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const saveProfile = useSaveCallerUserProfile();
@@ -49,6 +61,7 @@ export default function OnboardingPage({
         city: city.trim(),
         pincode: pincode.trim(),
         role: role === "farmer" ? Role.farmer : Role.consumer,
+        upiId: upiId.trim() || undefined,
       });
       toast.success("Profile created! Welcome to FarmDirect 🌱");
       navigate({
@@ -68,22 +81,27 @@ export default function OnboardingPage({
         className="w-full max-w-md"
       >
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 relative">
+          {/* Language toggle in top-right */}
+          <div className="absolute right-0 top-0">
+            <LanguageToggle />
+          </div>
+
           <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Sprout className="w-8 h-8 text-primary" />
           </div>
           <h1 className="font-display text-3xl font-bold text-foreground">
-            Welcome to FarmDirect
+            {t("welcome_to_farmdirect")}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Set up your profile to get started
+            {t("setup_your_profile")}
           </p>
         </div>
 
         {/* Role selection */}
         <div className="mb-6" data-ocid="onboarding.role_select">
           <Label className="text-sm font-medium text-foreground mb-3 block">
-            I am a...
+            {t("i_am_a")}
           </Label>
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -96,9 +114,9 @@ export default function OnboardingPage({
               }`}
             >
               <div className="text-2xl mb-1">🌾</div>
-              <div className="font-semibold text-sm">Farmer</div>
+              <div className="font-semibold text-sm">{t("farmer")}</div>
               <div className="text-muted-foreground text-xs">
-                I sell produce
+                {t("i_sell_produce")}
               </div>
             </button>
             <button
@@ -111,8 +129,10 @@ export default function OnboardingPage({
               }`}
             >
               <div className="text-2xl mb-1">🛒</div>
-              <div className="font-semibold text-sm">Consumer</div>
-              <div className="text-muted-foreground text-xs">I buy produce</div>
+              <div className="font-semibold text-sm">{t("consumer")}</div>
+              <div className="text-muted-foreground text-xs">
+                {t("i_buy_produce")}
+              </div>
             </button>
           </div>
         </div>
@@ -122,7 +142,7 @@ export default function OnboardingPage({
           <div>
             <Label htmlFor="name" className="text-sm font-medium mb-1.5 block">
               <User className="w-4 h-4 inline mr-1.5" />
-              Full Name
+              {t("full_name")}
             </Label>
             <Input
               id="name"
@@ -148,7 +168,7 @@ export default function OnboardingPage({
           <div>
             <Label htmlFor="phone" className="text-sm font-medium mb-1.5 block">
               <Phone className="w-4 h-4 inline mr-1.5" />
-              Phone Number
+              {t("phone_number")}
             </Label>
             <Input
               id="phone"
@@ -172,10 +192,33 @@ export default function OnboardingPage({
             )}
           </div>
 
+          {/* UPI ID — farmers only */}
+          {role === "farmer" && (
+            <div>
+              <Label
+                htmlFor="upiId"
+                className="text-sm font-medium mb-1.5 block"
+              >
+                <CreditCard className="w-4 h-4 inline mr-1.5" />
+                {t("upi_id_for_receiving")}
+              </Label>
+              <Input
+                id="upiId"
+                data-ocid="onboarding.upi_input"
+                placeholder="e.g. farmer@upi or 9999999999@gpay"
+                value={upiId}
+                onChange={(e) => setUpiId(e.target.value)}
+              />
+              <p className="text-muted-foreground text-xs mt-1">
+                Optional — consumers will pay directly to this UPI ID
+              </p>
+            </div>
+          )}
+
           <div>
             <Label htmlFor="city" className="text-sm font-medium mb-1.5 block">
               <MapPin className="w-4 h-4 inline mr-1.5" />
-              City
+              {t("city")}
             </Label>
             <Input
               id="city"
@@ -204,7 +247,7 @@ export default function OnboardingPage({
               className="text-sm font-medium mb-1.5 block"
             >
               <Hash className="w-4 h-4 inline mr-1.5" />
-              Pincode
+              {t("pincode")}
             </Label>
             <Input
               id="pincode"
@@ -240,8 +283,10 @@ export default function OnboardingPage({
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Setting up profile...
               </>
+            ) : role === "farmer" ? (
+              `${t("continue_as_farmer")} 🌾`
             ) : (
-              `Continue as ${role === "farmer" ? "Farmer 🌾" : "Consumer 🛒"}`
+              `${t("continue_as_consumer")} 🛒`
             )}
           </Button>
         </form>

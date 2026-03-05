@@ -12,17 +12,39 @@ import type { Principal } from '@icp-sdk/core/principal';
 
 export type DeliveryType = { 'pickup' : null } |
   { 'delivery' : null };
+export interface FounderStats {
+  'totalOrders' : bigint,
+  'pendingWithdrawal' : bigint,
+  'totalFeesCollected' : bigint,
+  'withdrawnAmount' : bigint,
+}
 export interface Order {
   'id' : bigint,
   'status' : OrderStatus,
+  'platformFee' : bigint,
   'listingId' : bigint,
+  'buyerLocationUpdatedAt' : [] | [Time],
   'deliveryType' : DeliveryType,
   'seller' : Principal,
+  'sellerLat' : [] | [number],
+  'sellerLng' : [] | [number],
   'upiRef' : [] | [string],
   'totalAmount' : bigint,
+  'sellerAmount' : bigint,
   'timestamp' : Time,
   'quantity' : bigint,
+  'sellerLocationUpdatedAt' : [] | [Time],
+  'buyerLat' : [] | [number],
+  'buyerLng' : [] | [number],
   'buyer' : Principal,
+}
+export interface OrderLocations {
+  'buyerLocationUpdatedAt' : [] | [Time],
+  'sellerLat' : [] | [number],
+  'sellerLng' : [] | [number],
+  'sellerLocationUpdatedAt' : [] | [Time],
+  'buyerLat' : [] | [number],
+  'buyerLng' : [] | [number],
 }
 export type OrderStatus = { 'cancelled' : null } |
   { 'pending_payment' : null } |
@@ -30,6 +52,11 @@ export type OrderStatus = { 'cancelled' : null } |
   { 'payment_confirmed' : null } |
   { 'in_delivery' : null } |
   { 'ready_for_pickup' : null };
+export interface OrderWithFees {
+  'order' : Order,
+  'platformFee' : bigint,
+  'sellerAmount' : bigint,
+}
 export interface ProductListing {
   'id' : bigint,
   'title' : string,
@@ -43,13 +70,24 @@ export interface ProductListing {
   'price' : bigint,
   'farmer' : Principal,
 }
+export interface PublicUserProfile {
+  'upiQrImageId' : [] | [string],
+  'city' : string,
+  'name' : string,
+  'role' : Role,
+  'upiId' : [] | [string],
+  'phone' : string,
+  'pincode' : string,
+}
 export type Role = { 'consumer' : null } |
   { 'farmer' : null };
 export type Time = bigint;
 export interface UserProfile {
+  'upiQrImageId' : [] | [string],
   'city' : string,
   'name' : string,
   'role' : Role,
+  'upiId' : [] | [string],
   'phone' : string,
   'pincode' : string,
 }
@@ -92,20 +130,26 @@ export interface _SERVICE {
   'deleteListing' : ActorMethod<[bigint], undefined>,
   'getAllActiveListings' : ActorMethod<[], Array<ProductListing>>,
   'getAllOrders' : ActorMethod<[], Array<Order>>,
+  'getAllOrdersWithFees' : ActorMethod<[], Array<OrderWithFees>>,
   'getBuyerOrders' : ActorMethod<[Principal], Array<Order>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getFounderStats' : ActorMethod<[], FounderStats>,
   'getListing' : ActorMethod<[bigint], [] | [ProductListing]>,
   'getListingsByCity' : ActorMethod<[string], Array<ProductListing>>,
   'getListingsByPincode' : ActorMethod<[string], Array<ProductListing>>,
   'getListingsFromFarmDirect' : ActorMethod<[], Array<ProductListing>>,
   'getOrder' : ActorMethod<[bigint], [] | [Order]>,
+  'getOrderLocations' : ActorMethod<[bigint], [] | [OrderLocations]>,
   'getOrdersByStatus' : ActorMethod<[OrderStatus], Array<Order>>,
   'getSellerOrders' : ActorMethod<[Principal], Array<Order>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'getUserPublicProfile' : ActorMethod<[Principal], [] | [PublicUserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'placeOrder' : ActorMethod<[bigint, bigint, DeliveryType], bigint>,
+  'recordWithdrawal' : ActorMethod<[bigint], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'updateOrderLocation' : ActorMethod<[bigint, number, number], undefined>,
   'updateOrderStatus' : ActorMethod<[bigint, OrderStatus], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;

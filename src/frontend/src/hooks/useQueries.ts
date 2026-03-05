@@ -1,9 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   DeliveryType,
+  FounderStats,
   Order,
+  OrderLocations,
   OrderStatus,
+  OrderWithFees,
   ProductListing,
+  PublicUserProfile,
   UserProfile,
 } from "../backend.d";
 import { useActor } from "./useActor";
@@ -292,5 +296,111 @@ export function useGetOrder(orderId: bigint | null) {
       return actor.getOrder(orderId);
     },
     enabled: !!actor && !actorFetching && orderId !== null,
+  });
+}
+
+// ── Public Profile ────────────────────────────────────────────────────────────
+
+export function useGetUserPublicProfile(principalStr: string | null) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<PublicUserProfile | null>({
+    queryKey: ["publicProfile", principalStr],
+    queryFn: async () => {
+      if (!actor || !principalStr) return null;
+      const { Principal } = await import("@dfinity/principal");
+      return actor.getUserPublicProfile(Principal.fromText(principalStr));
+    },
+    enabled: !!actor && !actorFetching && !!principalStr,
+  });
+}
+
+// ── Admin / Founder ───────────────────────────────────────────────────────────
+
+export function useIsCallerAdmin() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<boolean>({
+    queryKey: ["isCallerAdmin"],
+    queryFn: async () => {
+      if (!actor) return false;
+      return actor.isCallerAdmin();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useGetFounderStats() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<FounderStats | null>({
+    queryKey: ["founderStats"],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getFounderStats();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useGetAllOrdersWithFees() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<OrderWithFees[]>({
+    queryKey: ["allOrdersWithFees"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllOrdersWithFees();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useRecordWithdrawal() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (amount: bigint) => {
+      if (!actor) throw new Error("Actor not available");
+      await actor.recordWithdrawal(amount);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["founderStats"] });
+      queryClient.invalidateQueries({ queryKey: ["allOrdersWithFees"] });
+    },
+  });
+}
+
+// ── Live Location Tracking ─────────────────────────────────────────────────────
+
+export function useGetOrderLocations(orderId: bigint | null) {
+  const { actor, isFetching: actorFetching } = useActor();
+  return useQuery<OrderLocations | null>({
+    queryKey: ["orderLocations", orderId?.toString()],
+    queryFn: async () => {
+      if (!actor || orderId === null) return null;
+      return actor.getOrderLocations(orderId);
+    },
+    enabled: !!actor && !actorFetching && orderId !== null,
+    refetchInterval: 8000,
+  });
+}
+
+export function useUpdateOrderLocation() {
+  const { actor } = useActor();
+  return useMutation({
+    mutationFn: async ({
+      orderId,
+      lat,
+      lng,
+    }: {
+      orderId: bigint;
+      lat: number;
+      lng: number;
+    }) => {
+      if (!actor) throw new Error("Actor not available");
+      await actor.updateOrderLocation(orderId, lat, lng);
+    },
   });
 }

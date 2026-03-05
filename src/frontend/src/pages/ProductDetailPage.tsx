@@ -63,6 +63,7 @@ export default function ProductDetailPage({
         orderId,
         amount: BigInt(total),
         listingTitle: listing.title,
+        sellerPrincipal: listing.farmer.toString(),
       });
     } catch (_err) {
       toast.error("Failed to place order. Please try again.");

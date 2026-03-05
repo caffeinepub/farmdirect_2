@@ -27,6 +27,7 @@ import { motion } from "motion/react";
 import { toast } from "sonner";
 import type { AppView } from "../App";
 import { DeliveryType, OrderStatus } from "../backend.d";
+import LiveTrackingMap from "../components/LiveTrackingMap";
 import OrderStatusBadge from "../components/OrderStatusBadge";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
@@ -378,6 +379,25 @@ export default function OrderTrackingPage({
               This order has been cancelled
             </p>
           </div>
+        )}
+
+        {/* Live Tracking Map - only for active orders */}
+        {(order.status === OrderStatus.payment_confirmed ||
+          order.status === OrderStatus.in_delivery ||
+          order.status === OrderStatus.ready_for_pickup) && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mb-5"
+          >
+            <LiveTrackingMap
+              orderId={orderId}
+              isSeller={!!isSeller}
+              deliveryType={order.deliveryType}
+              orderStatus={order.status}
+            />
+          </motion.div>
         )}
 
         {/* Buyer/Seller info */}
